@@ -109,16 +109,15 @@ class JSLintDirective {
     
         
     public function addOption($name, $value) {        
+        $name = strtolower($name);
+        
         if (!$this->isNameValid($name)) {
             return false;
         }
         
         if ($this->isBooleanOption($name)) {
             $this->options[$name] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-            return true;
-        }
-        
-        if ($this->isIntegerOption($name)) {
+        } elseif ($this->isIntegerOption($name)) {
             if ($name == 'indent') {
                 $default = 4;
             } elseif ($name == 'maxerr') {
@@ -131,12 +130,47 @@ class JSLintDirective {
                 'min_range' => 0,
                 'default' => $default
             )));
-            
-            return true;
+        } else {
+            return false;
+        }        
+        
+        ksort($this->options);
+        return true;
+    }
+    
+    /**
+     * 
+     * @param string $name
+     * @return boolean
+     */
+    public function hasOption($name) {
+        return array_key_exists(strtolower($name), $this->options);
+    }
+    
+    
+    /**
+     * 
+     * @param string $name
+     * @return mixed
+     */
+    public function getOption($name) {
+        $name = strtolower($name);
+        
+        if (!$this->hasOption($name)) {
+            return null;
         }
         
-        return false;        
+        return $this->options[$name];
     }
+    
+    /**
+     * 
+     * @return array
+     */
+    public function getOptions() {
+        return $this->options;
+    }
+    
     
     /**
      * 
@@ -167,5 +201,38 @@ class JSLintDirective {
     } 
     
     
+    /**
+     * 
+     * @return string
+     */
+    public function __toString() {
+        $optionValueStrings = array();
+        $options = $this->getOptions();
+        
+        foreach ($options as $name => $value) {
+            $optionValueStrings[] = $name.': '.$this->getStringValue($name, $value);
+        }
+        
+        return '/*jslint '.  implode(', ', $optionValueStrings).' */';
+    }
+    
+    
+    /**
+     * 
+     * @param string $name
+     * @param mixed $value
+     * @return string
+     */
+    private function getStringValue($name, $value) {
+        if ($this->isBooleanOption($name)) {
+            return $value ? 'true' : 'false';            
+        }
+        
+        if ($this->isIntegerOption($name)) {
+            return (string)$value;
+        }
+        
+        return $value;
+    }
     
 }
